@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://c67jo31cg521v"]
+
+[ext_resource type="PackedScene" uid="uid://bhsyr7rgq31qg" path="res://asteroid.tscn" id="1_v78gn"]
+[ext_resource type="Script" uid="uid://byb0e3cccftlm" path="res://moving_asteroid.gd" id="2_dr4wm"]
+
+[node name="TestMove" type="Node2D" unique_id=1287160745]
+
+[node name="Asteroid" parent="." unique_id=912805152 instance=ExtResource("1_v78gn")]
+script = ExtResource("2_dr4wm")
+
+[node name="RoxyVector2D" parent="Asteroid" index="1" unique_id=931136403]
+direction = Vector2(14.883241, 24.724312)
+length = 28.858316
+
+[editable path="Asteroid"]

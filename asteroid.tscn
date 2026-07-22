@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://bhsyr7rgq31qg"]
+
+[ext_resource type="Script" uid="uid://dtp4mdon3bquh" path="res://addons/RoxyVector2D/Node/roxy_vector_2d.gd" id="1_37kl0"]
+
+[sub_resource type="Gradient" id="Gradient_37kl0"]
+offsets = PackedFloat32Array(0, 0.59271216)
+colors = PackedColorArray(0.73066574, 0.46063167, 0.2828579, 1, 1, 1, 1, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_masg3"]
+gradient = SubResource("Gradient_37kl0")
+
+[node name="Asteroid" type="Node2D" unique_id=912805152]
+
+[node name="Polygon2D" type="Polygon2D" parent="." unique_id=231807712]
+texture = SubResource("GradientTexture2D_masg3")
+polygon = PackedVector2Array(-8, -13, 2, -22, 24, -22, 32, -2, 18, 15, -15, 32, -32, 8, -16, -12)
+
+[node name="RoxyVector2D" type="Node2D" parent="." unique_id=931136403]
+script = ExtResource("1_37kl0")
+direction = Vector2(56.125725, -17.38417)
+length = 58.756332
+metadata/_custom_type_script = "uid://dtp4mdon3bquh"
