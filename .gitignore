@@ -12,3 +12,6 @@
 
 # Export presets
 export_presets.cfg
+
+# Exclude graphic working files
+*.pxd
