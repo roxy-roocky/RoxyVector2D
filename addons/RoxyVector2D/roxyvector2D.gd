@@ -97,7 +97,7 @@ func _forward_canvas_gui_input(event: InputEvent) -> bool:
 					# Click is on the arrow segment: start position drag
 					moveGrabbed = true
 					grabbed = false
-					oldPos = selectedVector.global_position
+					oldPos = selectedVector.position
 					# Store offset so the node doesn't snap to the mouse origin
 					mouseOffset = worldPos - selectedVector.global_position
 
@@ -114,9 +114,9 @@ func _forward_canvas_gui_input(event: InputEvent) -> bool:
 				elif moveGrabbed:
 					moveGrabbed = false
 					var undo = get_undo_redo()
-					undo.create_action("Change position of %s to %s" % [selectedVector.name, selectedVector.global_position])
-					undo.add_do_property(selectedVector, "global_position", selectedVector.global_position)
-					undo.add_undo_property(selectedVector, "global_position", oldPos)
+					undo.create_action("Change position of %s to %s" % [selectedVector.name, selectedVector.position])
+					undo.add_do_property(selectedVector, "position", selectedVector.position)
+					undo.add_undo_property(selectedVector, "position", oldPos)
 					undo.commit_action(false)
 				return false
 
