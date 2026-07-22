@@ -153,7 +153,9 @@ func _check_select_vectors(mouseGlobalPos: Vector2) -> bool:
 	# Convert screen position to world position
 	var worldPos: Vector2 = EditorInterface.get_editor_viewport_2d().get_screen_transform().affine_inverse() * mouseGlobalPos
 	var sceneRoot := EditorInterface.get_edited_scene_root() as Node
-	var roxyVectors = EditorInterface.get_edited_scene_root().find_children("*", "RoxyVector2D", true)
+	if !sceneRoot:
+		return false
+	var roxyVectors = sceneRoot.find_children("*", "RoxyVector2D", true)
 
 	# Include the root node itself if it is a RoxyVector2D
 	if sceneRoot is RoxyVector2D:
