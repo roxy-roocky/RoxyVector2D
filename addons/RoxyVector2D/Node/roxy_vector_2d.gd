@@ -5,18 +5,21 @@ class_name RoxyVector2D
 
 signal direction_changed()
 
+## Represent vector's [b]direction[/b]
 @export var direction:= Vector2(0, 32):
 	get: return direction
 	set(val):
 		direction = val
 		queue_redraw()
 		emit_signal("direction_changed")
-		
+
+## Get of set the vector's [b]length[/b] without change its direction
 @export var length: float:
 	get: return direction.length()
 	set(val):
 		direction = direction.normalized() * val
 
+## Set the arrow's width
 @export_category("Debug")
 @export var width:= 2.0:
 	get: return width
@@ -24,6 +27,7 @@ signal direction_changed()
 		width = val
 		queue_redraw()
 		
+## Set the arrow's color
 @export var color := Color.RED:
 	get: return color
 	set(val):
