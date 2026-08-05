@@ -43,5 +43,5 @@ func _draw() -> void:
 		var headDir2 = dirNormal.rotated(-3*PI/4)
 		
 		draw_line(Vector2(0,0), dirScaled, color, width)
-		draw_line(dirScaled - headDir1*width/2, dirScaled + headDir1*10, color, width)
-		draw_line(dirScaled - headDir2*width/2, dirScaled + headDir2*10, color, width)
+		draw_line(dirScaled - headDir1*width/2, dirScaled + headDir1*10*(width/2.0), color, width)
+		draw_line(dirScaled - headDir2*width/2, dirScaled + headDir2*10*(width/2.0), color, width)
