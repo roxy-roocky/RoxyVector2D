@@ -1,6 +1,8 @@
 @tool
 extends EditorPlugin
 
+const roxyvector2d_settings = preload("res://addons/RoxyVector2D/roxyvector2D_settings.gd")
+
 # Icon displayed at the handle position in the 2D viewport overlay
 var handleIcon: Texture2D
 
@@ -26,7 +28,6 @@ var oldPos: Vector2
 func _enable_plugin() -> void:
 	pass
 
-
 func _handles(object: Object) -> bool:
 	# Always return true so _forward_canvas_gui_input is called regardless of selection
 	return object is RoxyVector2D
@@ -39,6 +40,13 @@ func _disable_plugin() -> void:
 var editorSelectionObj: EditorSelection
 
 func _enter_tree() -> void:
+	# Check and init project settings
+	if !ProjectSettings.has_setting(roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH):
+		ProjectSettings.set_setting(roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH, roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH_VALUE)
+		
+	ProjectSettings.set_initial_value(roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH, roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH_VALUE)
+	ProjectSettings.settings_changed.connect(_redraw_scene_vectors)
+	
 	# Load the standard editor handle icon from the editor theme
 	handleIcon = get_editor_interface().get_base_control().get_theme_icon("EditorHandle", "EditorIcons")
 	editorSelectionObj = EditorInterface.get_selection()
@@ -171,9 +179,23 @@ func _check_select_vectors(mouseGlobalPos: Vector2) -> bool:
 
 	return false
 
+func _redraw_scene_vectors() -> void:
+	var sceneRoot := EditorInterface.get_edited_scene_root() as Node
+	if !sceneRoot:
+		return
+	var roxyVectors = sceneRoot.find_children("*", "RoxyVector2D", true)
+
+	# Include the root node itself if it is a RoxyVector2D
+	if sceneRoot is RoxyVector2D:
+		roxyVectors.push_front(sceneRoot)
+
+	for rawv in roxyVectors:
+		var v = rawv as CanvasItem
+		v.queue_redraw()
 
 func _exit_tree() -> void:
 	editorSelectionObj.selection_changed.disconnect(_on_selection_changed)
+	ProjectSettings.settings_changed.disconnect(_redraw_scene_vectors)
 	
 # Check if node is in editable scene instance or owe to the current scene
 func is_node_editable(node: Node) -> bool:

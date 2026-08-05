@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://bhsyr7rgq31qg" path="res://asteroid.tscn" id="1_v78gn"]
 [ext_resource type="Script" uid="uid://byb0e3cccftlm" path="res://moving_asteroid.gd" id="2_dr4wm"]
+[ext_resource type="Script" uid="uid://dtp4mdon3bquh" path="res://addons/RoxyVector2D/Node/roxy_vector_2d.gd" id="3_dr4wm"]
 
 [node name="TestMove" type="Node2D" unique_id=1287160745]
 
@@ -9,8 +10,15 @@
 script = ExtResource("2_dr4wm")
 
 [node name="RoxyVector2D" parent="Asteroid" index="1" unique_id=931136403]
-direction = Vector2(127.93729, 170.35663)
-length = 213.04771
+direction = Vector2(66.66547, 79.652054)
+length = 103.868835
+
+[node name="RoxyVector2D2" type="Node2D" parent="Asteroid" unique_id=836283788]
+position = Vector2(18.527527, -5.472473)
+script = ExtResource("3_dr4wm")
+direction = Vector2(235.37628, -53.83542)
+length = 241.45444
 width = 10.0
+metadata/_custom_type_script = "uid://dtp4mdon3bquh"
 
 [editable path="Asteroid"]
