@@ -164,7 +164,7 @@ func _check_select_vectors(mouseGlobalPos: Vector2) -> bool:
 	for rawv in roxyVectors:
 		var v = rawv as RoxyVector2D
 		# Check if the click is close enough to the arrow segment
-		if is_node_editable(v) and Geometry2D.get_closest_point_to_segment(worldPos, v.global_position, v.global_position + v.direction).distance_squared_to(worldPos) < v.width * 2:
+		if is_node_editable(v) and Geometry2D.get_closest_point_to_segment(worldPos, v.global_position, v.global_position + v.direction).distance_squared_to(worldPos) < (v.width*v.width*1.5):
 			EditorInterface.get_selection().clear()
 			EditorInterface.get_selection().add_node(v)
 			return true
