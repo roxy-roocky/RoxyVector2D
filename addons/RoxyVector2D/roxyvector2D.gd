@@ -9,9 +9,6 @@ var handleIcon: Texture2D
 # Currently selected RoxyVector2D node, null if none
 var selectedVector: RoxyVector2D = null
 
-# Handle position in screen space (used for click detection and drawing)
-var handleScreenPos: Vector2
-
 # True when the user is dragging the direction handle
 var grabbed: bool = false
 
@@ -29,7 +26,6 @@ func _enable_plugin() -> void:
 	pass
 
 func _handles(object: Object) -> bool:
-	# Always return true so _forward_canvas_gui_input is called regardless of selection
 	return object is RoxyVector2D
 
 
@@ -48,7 +44,7 @@ func _enter_tree() -> void:
 	ProjectSettings.settings_changed.connect(_redraw_scene_vectors)
 	
 	# Load the standard editor handle icon from the editor theme
-	handleIcon = get_editor_interface().get_base_control().get_theme_icon("EditorHandle", "EditorIcons")
+	handleIcon = EditorInterface.get_base_control().get_theme_icon("EditorHandle", "EditorIcons")
 	editorSelectionObj = EditorInterface.get_selection()
 	editorSelectionObj.selection_changed.connect(_on_selection_changed)
 
@@ -81,7 +77,7 @@ func _on_selection_changed():
 func _forward_canvas_draw_over_viewport(viewport_control: Control) -> void:
 	if selectedVector and selectedVector.get_viewport():
 		# Compute the handle screen position (tip of the direction arrow)
-		handleScreenPos = (selectedVector.get_viewport().get_screen_transform() * (selectedVector.global_position + selectedVector.direction))
+		var handleScreenPos := (selectedVector.get_viewport().get_screen_transform() * selectedVector.to_global(selectedVector.direction))
 		# Offset by the overlay's position to get local overlay coordinates
 		var pos = handleScreenPos - viewport_control.global_position
 		# Draw centered on the tip
@@ -93,6 +89,7 @@ func _forward_canvas_gui_input(event: InputEvent) -> bool:
 		var mouseEv = event as InputEventMouseButton
 		if mouseEv and mouseEv.button_index == MOUSE_BUTTON_LEFT:
 			if mouseEv.pressed:
+				var handleScreenPos := (selectedVector.get_viewport().get_screen_transform() * selectedVector.to_global(selectedVector.direction))
 				var dist = handleScreenPos.distance_squared_to(mouseEv.global_position)
 				var worldPos: Vector2 = EditorInterface.get_editor_viewport_2d().get_screen_transform().affine_inverse() * mouseEv.global_position
 
@@ -101,7 +98,7 @@ func _forward_canvas_gui_input(event: InputEvent) -> bool:
 					grabbed = true
 					moveGrabbed = false
 					oldPos = selectedVector.direction
-				elif Geometry2D.get_closest_point_to_segment(worldPos, selectedVector.global_position, selectedVector.global_position + selectedVector.direction).distance_squared_to(worldPos) < selectedVector.width * 2:
+				elif _point_on_arrow(worldPos, selectedVector):
 					# Click is on the arrow segment: start position drag
 					moveGrabbed = true
 					grabbed = false
@@ -109,23 +106,24 @@ func _forward_canvas_gui_input(event: InputEvent) -> bool:
 					# Store offset so the node doesn't snap to the mouse origin
 					mouseOffset = worldPos - selectedVector.global_position
 
-				return grabbed or _check_select_vectors(mouseEv.global_position)
+				return grabbed or moveGrabbed or _check_select_vectors(mouseEv.global_position)
 			else:
 				# Mouse released: commit undo/redo action if a drag was active
-				if grabbed:
-					grabbed = false
+				if grabbed and selectedVector.direction != oldPos:
 					var undo = get_undo_redo()
 					undo.create_action("Change direction of %s to %s" % [selectedVector.name, selectedVector.direction])
 					undo.add_do_property(selectedVector, "direction", selectedVector.direction)
 					undo.add_undo_property(selectedVector, "direction", oldPos)
 					undo.commit_action(false)
-				elif moveGrabbed:
-					moveGrabbed = false
+				elif moveGrabbed and selectedVector.position != oldPos:
 					var undo = get_undo_redo()
 					undo.create_action("Change position of %s to %s" % [selectedVector.name, selectedVector.position])
 					undo.add_do_property(selectedVector, "position", selectedVector.position)
 					undo.add_undo_property(selectedVector, "position", oldPos)
 					undo.commit_action(false)
+					
+				moveGrabbed = false
+				grabbed = false
 				return false
 
 		if grabbed or moveGrabbed:
@@ -133,14 +131,16 @@ func _forward_canvas_gui_input(event: InputEvent) -> bool:
 			if mouseEv:
 				if grabbed:
 					# Update direction — snap to 4px grid when Ctrl/Cmd is held
-					var newPos = (selectedVector.get_viewport().get_screen_transform().affine_inverse() * mouseEv.global_position) - selectedVector.global_position
-					selectedVector.direction = newPos if !mouseEv.is_command_or_control_pressed() else newPos.snapped(Vector2(4, 4))
-				else:
+					var newPos = selectedVector.get_viewport().get_screen_transform().affine_inverse() * mouseEv.global_position
+					if mouseEv.is_command_or_control_pressed():
+						selectedVector.direction = selectedVector.to_local(newPos.snapped(Vector2(4, 4)))
+					else:
+						selectedVector.direction = selectedVector.to_local(newPos)
+				else: # or moveGrabbed
 					# Update position — snap to 4px grid when Ctrl/Cmd is held
 					var newPos = (selectedVector.get_viewport().get_screen_transform().affine_inverse() * mouseEv.global_position) - mouseOffset
 					selectedVector.global_position = newPos if !mouseEv.is_command_or_control_pressed() else newPos.snapped(Vector2(4, 4))
-
-	elif event is InputEventMouseButton and event.is_pressed():
+	elif event is InputEventMouseButton and event.is_pressed() and event.button_index == MOUSE_BUTTON_LEFT:
 		# No vector selected: try to select one by clicking on its arrow
 		return _check_select_vectors(event.global_position)
 
@@ -152,8 +152,10 @@ func _input(event: InputEvent) -> void:
 	# to allow selecting a vector by clicking on its arrow
 	if !selectedVector:
 		var mouseEv = event as InputEventMouseButton
-		if mouseEv and mouseEv.pressed and EditorInterface.get_editor_viewport_2d().get_parent().get_global_rect().has_point(mouseEv.global_position):
+		if mouseEv and mouseEv.pressed and mouseEv.button_index == MOUSE_BUTTON_LEFT and EditorInterface.get_editor_viewport_2d().get_parent().get_global_rect().has_point(mouseEv.global_position):
 			if _check_select_vectors(mouseEv.global_position):
+				grabbed = false
+				moveGrabbed = false
 				get_viewport().set_input_as_handled()
 
 
@@ -172,12 +174,16 @@ func _check_select_vectors(mouseGlobalPos: Vector2) -> bool:
 	for rawv in roxyVectors:
 		var v = rawv as RoxyVector2D
 		# Check if the click is close enough to the arrow segment
-		if is_node_editable(v) and Geometry2D.get_closest_point_to_segment(worldPos, v.global_position, v.global_position + v.direction).distance_squared_to(worldPos) < (v.width*v.width*1.5):
+		if is_node_editable(v) and _point_on_arrow(worldPos, v):
 			EditorInterface.get_selection().clear()
 			EditorInterface.get_selection().add_node(v)
 			return true
 
 	return false
+	
+func _point_on_arrow(point: Vector2, v: RoxyVector2D) -> bool:
+	var arrow_scale_avg = (absf(v.global_scale.x) + absf(v.global_scale.y))/2.0
+	return Geometry2D.get_closest_point_to_segment(point, v.global_position, v.to_global(v.direction)).distance_squared_to(point) < (pow(v.real_arrow_width()*arrow_scale_avg,2)*1.5)
 
 func _redraw_scene_vectors() -> void:
 	var sceneRoot := EditorInterface.get_edited_scene_root() as Node
@@ -196,6 +202,8 @@ func _redraw_scene_vectors() -> void:
 func _exit_tree() -> void:
 	editorSelectionObj.selection_changed.disconnect(_on_selection_changed)
 	ProjectSettings.settings_changed.disconnect(_redraw_scene_vectors)
+	if is_instance_valid(selectedVector):
+		selectedVector.direction_changed.disconnect(update_overlays)
 	
 # Check if node is in editable scene instance or owe to the current scene
 func is_node_editable(node: Node) -> bool:
@@ -203,7 +211,7 @@ func is_node_editable(node: Node) -> bool:
 	var current = node
 	while current != scene_root and current != null:
 		if current.scene_file_path != "":
-			# current est la racine d'une sous-scène instanciée
+			# current is the root of an instiate scene
 			return scene_root.is_editable_instance(current)
 		current = current.get_parent()
-	return true # la node appartient directement à la scène éditée
+	return true # node own to current edited scene

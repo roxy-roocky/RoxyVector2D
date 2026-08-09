@@ -36,13 +36,29 @@ signal direction_changed()
 	set(val):
 		color = val
 		queue_redraw()
+		
+func _validate_property(property: Dictionary) -> void:
+	if property.name == "length":
+		property.usage &= ~PROPERTY_USAGE_STORAGE # remove 
+		
+func real_arrow_width() -> float:
+	if width > 0:
+		return width
+	elif ProjectSettings.has_setting(roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH):
+		return ProjectSettings.get_setting_with_override(roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH)
+	else: 
+		return roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH_VALUE
+		
+## Vector direction in global space
+var global_direction: Vector2:
+	get: return global_transform.basis_xform(direction)
+	set(val): direction = global_transform.affine_inverse().basis_xform(val)
 	
 func _draw() -> void:
 	if Engine.is_editor_hint() or (OS.is_debug_build() and get_tree().debug_paths_hint):
-		var realWidth: float = width if width > 0 else ProjectSettings.get_setting_with_override(roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH)
-		var compensatedDir = direction / global_scale
-		var dirNormal = compensatedDir.normalized()
-		var dirScaled = compensatedDir - ((realWidth * sqrt(2) / 2) * dirNormal)
+		var realWidth: float = real_arrow_width()
+		var dirNormal = direction.normalized()
+		var dirScaled = direction - ((realWidth * sqrt(2) / 2) * dirNormal)
 		var headDir1 = dirNormal.rotated(3*PI/4)
 		var headDir2 = dirNormal.rotated(-3*PI/4)
 		

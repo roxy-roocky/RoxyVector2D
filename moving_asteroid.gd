@@ -13,4 +13,4 @@ extends Node2D
 	
 func _process(delta: float) -> void:
 	if move:
-		global_position += $RoxyVector2D.direction * delta
+		global_position += $RoxyVector2D.global_direction * delta
