@@ -1,7 +1,7 @@
 # Godot editor files
 .godot/
 
-# Import files (generated, sauf si tu as des assets)
+# Import files
 *.import
 
 # macOS
