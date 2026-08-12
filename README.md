@@ -14,6 +14,8 @@ Simply use the `direction` or `global_direction` property of type `Vector2` on t
 
 ![](README.assets/usage_example.gif)
 
+The `direction_changed` signal is emitted when `direction` changes, including through `length`, `global_direction`, or a drag in the 2D editor.
+
 ## Debug
 
 The "Debug" section in inspector allow you to change the appearance of the arrow. Hold *Ctrl/Cmd* while dragging arrow to snap moving on 4px grid (see [limitations](#limitations) section).
