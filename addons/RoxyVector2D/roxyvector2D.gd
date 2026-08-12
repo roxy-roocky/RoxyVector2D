@@ -21,6 +21,9 @@ var mouseOffset: Vector2
 # Stores the previous value before a drag, used for undo/redo
 var oldPos: Vector2
 
+# Store the current snap value from the projet settings
+var grid_snap: Vector2
+
 
 func _enable_plugin() -> void:
 	pass
@@ -39,9 +42,14 @@ func _enter_tree() -> void:
 	# Check and init project settings
 	if !ProjectSettings.has_setting(roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH):
 		ProjectSettings.set_setting(roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH, roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH_VALUE)
-		
 	ProjectSettings.set_initial_value(roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH, roxyvector2d_settings.PROJECT_SETTINGS_DEFAULT_WIDTH_VALUE)
-	ProjectSettings.settings_changed.connect(_redraw_scene_vectors)
+	
+	if !ProjectSettings.has_setting(roxyvector2d_settings.PROJECT_SETTINGS_GRID_SNAP_STEP):
+		ProjectSettings.set_setting(roxyvector2d_settings.PROJECT_SETTINGS_GRID_SNAP_STEP, roxyvector2d_settings.PROJECT_SETTINGS_GRID_SNAP_STEP_VALUE)
+	ProjectSettings.set_initial_value(roxyvector2d_settings.PROJECT_SETTINGS_GRID_SNAP_STEP, roxyvector2d_settings.PROJECT_SETTINGS_GRID_SNAP_STEP_VALUE)
+	_update_grid_snap()
+	
+	ProjectSettings.settings_changed.connect(_on_project_settings_update)
 	
 	# Load the standard editor handle icon from the editor theme
 	handleIcon = EditorInterface.get_base_control().get_theme_icon("EditorHandle", "EditorIcons")
@@ -133,13 +141,13 @@ func _forward_canvas_gui_input(event: InputEvent) -> bool:
 					# Update direction — snap to 4px grid when Ctrl/Cmd is held
 					var newPos = selectedVector.get_viewport().get_screen_transform().affine_inverse() * mouseEv.global_position
 					if mouseEv.is_command_or_control_pressed():
-						selectedVector.direction = selectedVector.to_local(newPos.snapped(Vector2(4, 4)))
+						selectedVector.direction = selectedVector.to_local(newPos.snapped(grid_snap))
 					else:
 						selectedVector.direction = selectedVector.to_local(newPos)
 				else: # or moveGrabbed
 					# Update position — snap to 4px grid when Ctrl/Cmd is held
 					var newPos = (selectedVector.get_viewport().get_screen_transform().affine_inverse() * mouseEv.global_position) - mouseOffset
-					selectedVector.global_position = newPos if !mouseEv.is_command_or_control_pressed() else newPos.snapped(Vector2(4, 4))
+					selectedVector.global_position = newPos if !mouseEv.is_command_or_control_pressed() else newPos.snapped(grid_snap)
 	elif event is InputEventMouseButton and event.is_pressed() and event.button_index == MOUSE_BUTTON_LEFT:
 		# No vector selected: try to select one by clicking on its arrow
 		return _check_select_vectors(event.global_position)
@@ -185,6 +193,15 @@ func _point_on_arrow(point: Vector2, v: RoxyVector2D) -> bool:
 	var arrow_scale_avg = (absf(v.global_scale.x) + absf(v.global_scale.y))/2.0
 	return Geometry2D.get_closest_point_to_segment(point, v.global_position, v.to_global(v.direction)).distance_squared_to(point) < (pow(v.real_arrow_width()*arrow_scale_avg,2)*1.5)
 
+func _on_project_settings_update() -> void:
+	_redraw_scene_vectors()
+	
+func _update_grid_snap() ->void:
+	if ProjectSettings.has_setting(roxyvector2d_settings.PROJECT_SETTINGS_GRID_SNAP_STEP):
+		grid_snap = ProjectSettings.get_setting_with_override(roxyvector2d_settings.PROJECT_SETTINGS_GRID_SNAP_STEP)
+	else:
+		grid_snap = roxyvector2d_settings.PROJECT_SETTINGS_GRID_SNAP_STEP_VALUE
+
 func _redraw_scene_vectors() -> void:
 	var sceneRoot := EditorInterface.get_edited_scene_root() as Node
 	if !sceneRoot:
@@ -201,7 +218,7 @@ func _redraw_scene_vectors() -> void:
 
 func _exit_tree() -> void:
 	editorSelectionObj.selection_changed.disconnect(_on_selection_changed)
-	ProjectSettings.settings_changed.disconnect(_redraw_scene_vectors)
+	ProjectSettings.settings_changed.disconnect(_on_project_settings_update)
 	if is_instance_valid(selectedVector):
 		selectedVector.direction_changed.disconnect(update_overlays)
 	
