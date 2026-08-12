@@ -12,6 +12,8 @@ Alternatively you can use *length* to set the length of the vector without chang
 
 Simply use the `direction` or `global_direction` property of type `Vector2` on the `RoxyVector2D`'s instance.
 
+![](README.assets/usage_example.gif)
+
 ## Debug
 
 The "Debug" section in inspector allow you to change the appearance of the arrow. Hold *Ctrl/Cmd* while dragging arrow to snap moving on 4px grid (see [limitations](#limitations) section).
